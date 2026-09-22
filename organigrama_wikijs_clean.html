@@ -1,0 +1,271 @@
+<!-- Ca.taly.st Organigrama — Wiki.js compatible (Shadow DOM) -->
+<div id="corg-wikijs-mount" style="width:100%;height:750px;display:block;"></div>
+<script>
+
+(function() {
+  'use strict';
+
+  // ── Mount shadow DOM ──
+  var mountEl = document.getElementById('corg-wikijs-mount');
+  if (!mountEl) return;
+  var sh = mountEl.attachShadow({ mode: 'open' });
+
+  var styleEl = document.createElement('style');
+  styleEl.textContent = "\n:host {\n  display: block;\n  width: 100%;\n  height: 750px;\n  position: relative;\n  font-family: 'Inter','Helvetica Neue',Arial,sans-serif;\n}\n* { box-sizing: border-box; margin: 0; padding: 0; }\n\n/* SPLASH */\n#co-splash {\n  position: absolute; inset: 0; z-index: 9999;\n  background: #0d0d0d;\n  display: flex; flex-direction: column;\n  align-items: center; justify-content: center;\n  cursor: pointer;\n  transition: opacity .7s ease;\n  border-radius: 8px;\n}\n#co-splash.fade-out { opacity: 0; pointer-events: none; }\n#co-splash img {\n  width: clamp(140px, 24%, 280px);\n  object-fit: contain;\n  opacity: 0; transform: scale(.88);\n  transition: opacity .9s ease, transform .9s ease;\n}\n#co-splash img.vis { opacity: 1; transform: scale(1); }\n#co-hint {\n  margin-top: 28px; font-size: 11px; letter-spacing: .18em;\n  text-transform: uppercase; color: #333;\n  opacity: 0; transition: opacity 1.2s ease .6s;\n}\n#co-hint.vis { opacity: 1; }\n\n/* HEADER */\n#co-hdr {\n  position: absolute; top: 0; left: 0; right: 0; z-index: 200;\n  display: flex; align-items: center; justify-content: space-between;\n  padding: 12px 24px;\n  background: rgba(13,13,13,.93); backdrop-filter: blur(10px);\n  border-bottom: 1px solid #1c1c1c; border-radius: 8px 8px 0 0;\n}\n.co-logo { font-size: 15px; font-weight: 700; letter-spacing: .06em; color: #fff; }\n.co-logo .dot { color: #444; }\n.co-tip { font-size: 10px; color: #3a3a3a; letter-spacing: .06em; }\n.co-tip b { color: #555; font-weight: 500; }\n\n/* CANVAS */\n#co-canvas {\n  position: absolute; inset: 0;\n  background: #0d0d0d; border-radius: 8px;\n  overflow: hidden; cursor: grab;\n}\n#co-canvas:active { cursor: grabbing; }\n#co-world { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }\n\n/* SVG */\n#co-svg {\n  position: absolute; top: 0; left: 0;\n  width: 100%; height: 100%;\n  overflow: visible; pointer-events: none;\n}\n.co-lm { stroke: #252525; stroke-width: 1.5; fill: none; }\n.co-lc { stroke: #1e1e1e; stroke-width: 1; fill: none; stroke-dasharray: 5 4; }\n\n/* NODES */\n.co-nd {\n  position: absolute;\n  transform: translate(-50%,-50%);\n  display: flex; flex-direction: column; align-items: center;\n  cursor: pointer; z-index: 10;\n}\n.co-nd:hover { z-index: 30; }\n.co-ring {\n  border-radius: 50%; padding: 3px;\n  background: conic-gradient(#2a2a2a,#181818,#2a2a2a);\n  transition: padding .2s, box-shadow .2s;\n}\n.co-nd:hover .co-ring, .co-nd.open .co-ring {\n  padding: 4px;\n  box-shadow: 0 0 0 2px rgba(255,255,255,.1), 0 4px 20px rgba(0,0,0,.5);\n}\n.co-av {\n  border-radius: 50%;\n  display: flex; align-items: center; justify-content: center;\n  font-weight: 600; color: #bbb; overflow: hidden;\n  border: 1.5px solid #282828;\n  transition: border-color .2s; flex-shrink: 0;\n}\n.co-nd:hover .co-av, .co-nd.open .co-av { border-color: #444; }\n.co-av img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }\n.co-av .co-ini { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }\n.co-lbl { text-align: center; margin-top: 6px; pointer-events: none; max-width: 108px; }\n.co-nm { font-size: 10.5px; font-weight: 600; color: #ddd; line-height: 1.25; white-space: nowrap; }\n.co-rl { font-size: 9px; color: #555; margin-top: 1px; white-space: nowrap; }\n.co-tg { font-size: 7.5px; color: #383838; letter-spacing: .1em; text-transform: uppercase; margin-top: 2px; white-space: nowrap; }\n.co-exp {\n  width: 14px; height: 14px; border-radius: 50%;\n  background: #181818; border: 1px solid #2a2a2a;\n  display: flex; align-items: center; justify-content: center;\n  margin-top: 5px; font-size: 9px; color: #444;\n  transition: all .25s; flex-shrink: 0;\n}\n.co-nd.open .co-exp { background: #fff; color: #000; transform: rotate(45deg); border-color: #fff; }\n.co-nd:hover .co-exp { border-color: #444; color: #777; }\n.co-nd-ceo .co-nm { font-size: 13px; color: #fff; }\n.co-nd-ceo .co-rl { font-size: 10px; color: #888; }\n\n/* ZOOM */\n#co-zoom {\n  position: absolute; bottom: 20px; right: 20px;\n  display: flex; flex-direction: column; gap: 5px; z-index: 200;\n}\n.co-zb {\n  width: 32px; height: 32px; background: #181818;\n  border: 1px solid #252525; border-radius: 7px;\n  color: #666; font-size: 17px; cursor: pointer;\n  display: flex; align-items: center; justify-content: center;\n  transition: background .15s, color .15s;\n  font-family: inherit;\n}\n.co-zb:hover { background: #222; color: #ccc; }\n\n@keyframes co-pop {\n  from { opacity: 0; transform: translate(-50%,-50%) scale(.5); }\n  to   { opacity: 1; transform: translate(-50%,-50%) scale(1); }\n}\n.co-new { animation: co-pop .25s cubic-bezier(.34,1.56,.64,1) both; }\n";
+  sh.appendChild(styleEl);
+
+  var wrap = document.createElement('div');
+  wrap.innerHTML = "\n<div id=\"co-splash\">\n  <img id=\"co-slogo\" alt=\"Ca.taly.st\"/>\n  <div id=\"co-hint\">Toca para continuar</div>\n</div>\n<div id=\"co-canvas\">\n  <div id=\"co-world\">\n    <svg id=\"co-svg\"></svg>\n  </div>\n</div>\n<div id=\"co-hdr\">\n  <div class=\"co-logo\">Ca<span class=\"dot\">.</span>taly<span class=\"dot\">.</span>st</div>\n  <div class=\"co-tip\">Clic para expandir &nbsp;\u00b7&nbsp; <b>Arrastra</b> para mover</div>\n  <div></div>\n</div>\n<div id=\"co-zoom\">\n  <button class=\"co-zb\" id=\"co-zin\">+</button>\n  <button class=\"co-zb\" id=\"co-zout\">\u2212</button>\n  <button class=\"co-zb\" id=\"co-zrst\" style=\"font-size:12px\">\u2299</button>\n</div>\n";
+  sh.appendChild(wrap);
+
+  // Set splash logo src
+  sh.getElementById('co-slogo').src = "[BASE64_FOTO]";
+
+  // ── Data ──
+  var ORG = {"id":"ceo","name":"Darius Lau","role":"CEO","tag":"Ca.taly.st","initials":"DL","photo":"[BASE64_FOTO]","logo":null,"children":[{"id":"condovive","name":"CondoVive","role":"Business Unit","tag":"","initials":"CV","photo":null,"logo":"[BASE64_FOTO]","children":[{"id":"hugo","name":"Hugo Armenta","role":"Business Director","tag":"","initials":"HA","photo":"[BASE64_FOTO]","logo":null,"children":[{"id":"cx","name":"Pamela Lozano","role":"CX Lead","tag":"CX","initials":"PL","photo":"[BASE64_FOTO]","logo":null,"children":[{"id":"daniela","name":"Daniela Aguilar","role":"CX Specialist","tag":"","initials":"DA","photo":"[BASE64_FOTO]","logo":null,"children":[]},{"id":"paulina","name":"Paulina Trejo","role":"CX Specialist","tag":"","initials":"PT","photo":"[BASE64_FOTO]","logo":null,"children":[]},{"id":"hiram","name":"Hiram Montes","role":"CX Specialist","tag":"","initials":"HM","photo":"[BASE64_FOTO]","logo":null,"children":[]}]},{"id":"gw","name":"Sofía Aloisio","role":"Growth","tag":"GW","initials":"SA","photo":"[BASE64_FOTO]","logo":null,"children":[]},{"id":"sw","name":"Roberto Antelo","role":"Tech Lead","tag":"SW","initials":"RA","photo":"[BASE64_FOTO]","logo":null,"children":[{"id":"jp","name":"JP Grajeda","role":"Developer","tag":"","initials":"JP","photo":"[BASE64_FOTO]","logo":null,"children":[]},{"id":"acar","name":"Alfredo Carreón","role":"Developer","tag":"","initials":"AC","photo":"[BASE64_FOTO]","logo":null,"children":[]},{"id":"au","name":"Alfredo Uribe","role":"Developer","tag":"","initials":"AU","photo":"[BASE64_FOTO]","logo":null,"children":[]},{"id":"jg","name":"Jonathan Gutiérrez","role":"Developer","tag":"","initials":"JG","photo":"[BASE64_FOTO]","logo":null,"children":[]}]},{"id":"ux","name":"Alex Aguilar","role":"UX/UI Lead","tag":"UX","initials":"AA","photo":"[BASE64_FOTO]","logo":null,"children":[]}]}]},{"id":"admin","name":"Admin","role":"Operaciones","tag":"","initials":"ADM","photo":null,"logo":"[BASE64_FOTO]","children":[{"id":"mafer","name":"Ma. Fernanda Ávila","role":"People & Culture","tag":"HR","initials":"MFA","photo":"[BASE64_FOTO]","logo":null,"children":[]},{"id":"maria","name":"María Castillo","role":"Accounting","tag":"Accounting","initials":"MC","photo":"[BASE64_FOTO]","logo":null,"children":[]},{"id":"karen","name":"Ana Karen Torres","role":"Coordinación","tag":"Kitchen","initials":"KT","photo":"[BASE64_FOTO]","logo":null,"children":[]},{"id":"cesar","name":"César Arreola","role":"Coordinación","tag":"Kitchen","initials":"CA","photo":"[BASE64_FOTO]","logo":null,"children":[]}]},{"id":"totomox","name":"Totomox","role":"Minimal.works","tag":"","initials":"TM","photo":null,"logo":"[BASE64_FOTO]","children":[{"id":"mw","name":"Ismael Román","role":"HW Lead","tag":"","initials":"IR","photo":"[BASE64_FOTO]","logo":null,"children":[{"id":"isaac","name":"Isaac Gómez","role":"HW Specialist","tag":"","initials":"IG","photo":"[BASE64_FOTO]","logo":null,"children":[]},{"id":"diana","name":"Diana Juárez","role":"HW Specialist","tag":"","initials":"DJ","photo":"[BASE64_FOTO]","logo":null,"children":[]}]}]}]};
+
+  // ── State ──
+  var W = mountEl.offsetWidth || 900;
+  var H = 750;
+  var cX = W / 2, cY = H / 2 + 20;
+  var panX = 0, panY = 0, sc = 1;
+  var isPan = false, panStart = null;
+  var openSet  = {};
+  var nodeEls  = {};
+  var nodePos  = {};
+  var nodeData = {};
+
+  // ── DOM refs ──
+  var canvas  = sh.getElementById('co-canvas');
+  var world   = sh.getElementById('co-world');
+  var svgEl   = sh.getElementById('co-svg');
+
+  // ── Geometry ──
+  var PI2 = Math.PI * 2;
+
+  function circlePos(ox, oy, r, i, n) {
+    var a = -Math.PI / 2 + (i / n) * PI2;
+    return { x: ox + r * Math.cos(a), y: oy + r * Math.sin(a) };
+  }
+
+  function arcPos(ox, oy, px, py, r, i, n) {
+    var base   = Math.atan2(oy - py, ox - px);
+    var spread = n === 1 ? 0 : Math.min(Math.PI * 0.72, n * 0.46);
+    var a      = (base - spread / 2) + (n > 1 ? i * spread / (n - 1) : 0);
+    return { x: ox + r * Math.cos(a), y: oy + r * Math.sin(a) };
+  }
+
+  function levelR(depth)  { return [0, 200, 158, 122][Math.min(depth, 3)]; }
+  function avSize(depth)  { return [78, 60, 50, 42][Math.min(depth, 3)]; }
+
+  // ── Viewport ──
+  function applyTx() {
+    var tx = 'translate(' + (cX + panX) + 'px,' + (cY + panY) + 'px) scale(' + sc + ')';
+    world.style.transform = tx;
+    world.style.transformOrigin = '0 0';
+    svgEl.style.transform = tx;
+    svgEl.style.transformOrigin = '0 0';
+  }
+
+  function doZoom(f) { sc = Math.min(2.5, Math.max(0.3, sc * f)); applyTx(); }
+  function resetV()  { panX = 0; panY = 0; sc = 1; applyTx(); }
+
+  canvas.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    doZoom(e.deltaY < 0 ? 1.1 : 0.91);
+  }, { passive: false });
+
+  canvas.addEventListener('mousedown', function(e) {
+    if (e.target.closest && e.target.closest('.co-nd')) return;
+    isPan = true;
+    panStart = { x: e.clientX - panX, y: e.clientY - panY };
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!isPan) return;
+    panX = e.clientX - panStart.x;
+    panY = e.clientY - panStart.y;
+    applyTx();
+  });
+  document.addEventListener('mouseup', function() { isPan = false; });
+
+  // Touch
+  var t0 = null;
+  canvas.addEventListener('touchstart', function(e) {
+    if (e.touches.length === 1)
+      t0 = { x: e.touches[0].clientX - panX, y: e.touches[0].clientY - panY };
+  }, { passive: true });
+  canvas.addEventListener('touchmove', function(e) {
+    if (e.touches.length === 1 && t0) {
+      panX = e.touches[0].clientX - t0.x;
+      panY = e.touches[0].clientY - t0.y;
+      applyTx();
+    }
+  }, { passive: true });
+
+  sh.getElementById('co-zin').onclick  = function() { doZoom(1.15); };
+  sh.getElementById('co-zout').onclick = function() { doZoom(1/1.15); };
+  sh.getElementById('co-zrst').onclick = function() { resetV(); };
+
+  // ── Build node element ──
+  function makeEl(d, depth, isNew) {
+    var el = document.createElement('div');
+    el.className = 'co-nd' + (depth === 0 ? ' co-nd-ceo' : '') + (isNew ? ' co-new' : '');
+    el.id = 'cond-' + d.id;
+
+    var sz = avSize(depth);
+    var ring = document.createElement('div');
+    ring.className = 'co-ring';
+    var av = document.createElement('div');
+    av.className = 'co-av';
+    av.style.cssText = 'width:' + sz + 'px;height:' + sz + 'px;font-size:' + Math.round(sz * .27) + 'px;background:#1c1c1c;';
+
+    if (d.logo) {
+      var img = document.createElement('img');
+      img.src = d.logo; img.alt = d.name;
+      img.style.cssText = 'width:72%;height:72%;object-fit:contain;border-radius:0;display:block;margin:auto;';
+      av.style.background = '#111';
+      av.appendChild(img);
+    } else if (d.photo) {
+      var img = document.createElement('img');
+      img.src = d.photo; img.alt = d.name;
+      av.appendChild(img);
+    } else {
+      var ini = document.createElement('span');
+      ini.className = 'co-ini'; ini.textContent = d.initials;
+      av.appendChild(ini);
+    }
+
+    ring.appendChild(av);
+    el.appendChild(ring);
+
+    var lbl = document.createElement('div');
+    lbl.className = 'co-lbl';
+    lbl.innerHTML = '<div class="co-nm">' + d.name + '</div>'
+      + '<div class="co-rl">' + d.role + '</div>'
+      + (d.tag ? '<div class="co-tg">' + d.tag + '</div>' : '');
+    el.appendChild(lbl);
+
+    if (d.children && d.children.length > 0) {
+      var exp = document.createElement('div');
+      exp.className = 'co-exp'; exp.id = 'coexp-' + d.id; exp.textContent = '+';
+      el.appendChild(exp);
+      el.addEventListener('click', (function(dd, dp) {
+        return function(e) { e.stopPropagation(); toggle(dd, dp); };
+      })(d, depth));
+    }
+    return el;
+  }
+
+  function placeEl(el, x, y) {
+    el.style.left = x + 'px';
+    el.style.top  = y + 'px';
+  }
+
+  // ── Lines ──
+  function drawLine(x1, y1, x2, y2, cls, id) {
+    var old = sh.getElementById('coln-' + id);
+    if (old) old.remove();
+    var p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    var mx = (x1+x2)/2, my = (y1+y2)/2;
+    p.setAttribute('d', 'M'+x1+','+y1+' Q'+mx+','+my+' '+x2+','+y2);
+    p.setAttribute('class', cls);
+    p.id = 'coln-' + id;
+    svgEl.appendChild(p);
+  }
+  function removeLine(id) { var e = sh.getElementById('coln-' + id); if (e) e.remove(); }
+
+  // ── Init ──
+  function init() {
+    var el = makeEl(ORG, 0, false);
+    placeEl(el, 0, 0);
+    nodeEls[ORG.id]  = el;
+    nodePos[ORG.id]  = { x: 0, y: 0 };
+    nodeData[ORG.id] = ORG;
+    world.appendChild(el);
+    // Auto-open CEO
+    openSet[ORG.id] = true;
+    el.classList.add('open');
+    var exp = sh.getElementById('coexp-' + ORG.id);
+    if (exp) exp.textContent = '×';
+    expandChildren(ORG, 0, 0, null, null, 1);
+    applyTx();
+  }
+
+  function toggle(d, depth) {
+    if (openSet[d.id]) collapse(d); else expand(d, depth);
+  }
+
+  function expand(d, depth) {
+    openSet[d.id] = true;
+    var el = nodeEls[d.id];
+    el.classList.add('open');
+    var exp = sh.getElementById('coexp-' + d.id);
+    if (exp) exp.textContent = '×';
+    var pos = nodePos[d.id];
+    var pp  = getParentPos(d.id);
+    expandChildren(d, pos.x, pos.y, pp ? pp.x : null, pp ? pp.y : null, depth + 1);
+  }
+
+  function expandChildren(d, ox, oy, px, py, childDepth) {
+    var kids = d.children;
+    var r    = levelR(childDepth);
+    kids.forEach(function(child, i) {
+      var pos = (px === null || py === null)
+        ? circlePos(ox, oy, r, i, kids.length)
+        : arcPos(ox, oy, px, py, r, i, kids.length);
+      nodePos[child.id]  = pos;
+      nodeData[child.id] = child;
+      var cel = makeEl(child, childDepth, true);
+      placeEl(cel, pos.x, pos.y);
+      nodeEls[child.id] = cel;
+      world.appendChild(cel);
+      var lc = childDepth <= 1 ? 'co-lm' : 'co-lc';
+      drawLine(ox, oy, pos.x, pos.y, lc, d.id + '-' + child.id);
+    });
+  }
+
+  function collapse(d) {
+    openSet[d.id] = false;
+    var el = nodeEls[d.id];
+    el.classList.remove('open');
+    var exp = sh.getElementById('coexp-' + d.id);
+    if (exp) exp.textContent = '+';
+    collapseChildren(d);
+  }
+
+  function collapseChildren(d) {
+    d.children.forEach(function(child) {
+      if (openSet[child.id]) collapse(child);
+      var cel = nodeEls[child.id];
+      if (cel) { cel.remove(); delete nodeEls[child.id]; }
+      removeLine(d.id + '-' + child.id);
+    });
+  }
+
+  function getParentPos(id) {
+    for (var pid in nodeData) {
+      var d = nodeData[pid];
+      if (d.children && d.children.some(function(c) { return c.id === id; })) {
+        return nodePos[pid] || null;
+      }
+    }
+    return null;
+  }
+
+  // ── Splash ──
+  var splashEl = sh.getElementById('co-splash');
+  splashEl.addEventListener('click', function() {
+    splashEl.classList.add('fade-out');
+    setTimeout(function() { splashEl.style.display = 'none'; }, 750);
+  });
+  setTimeout(function() {
+    sh.getElementById('co-slogo').classList.add('vis');
+    sh.getElementById('co-hint').classList.add('vis');
+  }, 120);
+
+  // ── Start ──
+  init();
+
+})();
+
+</script>
